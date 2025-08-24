@@ -114,3 +114,107 @@ test.describe("인증 및 로그인 테스트 - 성공 시나리오", () => {
     });
   });
 });
+
+const loginBtn = (page: Page) =>
+  page.getByRole("button", { name: /^로그인$/, exact: true });
+
+test.describe("인증 및 로그인 테스트 - 실패 시나리오", () => {
+  test.beforeEach(async ({ page, context }) => {
+    await page.goto("/");
+    await page.getByRole("link", { name: "마이페이지" }).click();
+    await expect(page).toHaveURL(/\/user-account\/login(\?.*)?$/);
+
+    await context.clearCookies();
+    await context.clearPermissions();
+  });
+
+  test("존재하지 않는 계정시 alert 노출 됨", async ({ page }) => {
+    await test.step("입력", async () => {
+      await page.getByPlaceholder("아이디").fill("no_user");
+      await page.getByPlaceholder("비밀번호").fill("Any123!");
+    });
+
+    await test.step("로그인 시도 후 alert 확인", async () => {
+      const [dlg] = await Promise.all([
+        page.waitForEvent("dialog"),
+        loginBtn(page).click(),
+      ]);
+      await expect(dlg.message()).toContain(
+        "아이디 또는 비밀번호가 일치하지 않습니다. 입력 내용을 다시 확인해 주세요."
+      );
+      await dlg.accept();
+    });
+  });
+
+  test("비밀번호 불일치시 alert이 노출 됨", async ({ page }) => {
+    await test.step("입력", async () => {
+      await page.getByPlaceholder("아이디").fill(CREDENTIALS.id);
+      await page.getByPlaceholder("비밀번호").fill("Wrong999");
+    });
+
+    await test.step("로그인 시도 후 alert 확인", async () => {
+      const [dlg] = await Promise.all([
+        page.waitForEvent("dialog"),
+        loginBtn(page).click(),
+      ]);
+      await expect(dlg.message()).toContain(
+        "아이디 또는 비밀번호가 일치하지 않습니다. 입력 내용을 다시 확인해 주세요."
+      );
+      await dlg.accept();
+    });
+  });
+
+  test("아이디 공란시 alert이 노출 되고 아이디 포커스가 됨", async ({
+    page,
+  }) => {
+    await test.step("비밀번호만 입력", async () => {
+      await page.getByPlaceholder("비밀번호").fill(CREDENTIALS.pw);
+      await expect(page.getByPlaceholder("아이디")).toHaveValue("");
+      await expect(loginBtn(page)).toBeEnabled();
+    });
+
+    await test.step("로그인 시도 후 alert 확인", async () => {
+      const whenDialog = page
+        .waitForEvent("dialog", { timeout: 5000 })
+        .then(async (d) => {
+          await expect(d.message()).toContain("아이디를 입력해 주세요"); // 실제 문구
+          await d.accept();
+        });
+
+      await loginBtn(page).click();
+      await whenDialog; // dialog 검증/처리가 실제로 수행됐는지 보장
+    });
+
+    await test.step("페이지/포커스 유지", async () => {
+      await expect(page).toHaveURL(/\/user-account\/login(?:\?.*)?$/);
+      await expect(page.getByPlaceholder("아이디")).toBeFocused();
+    });
+  });
+
+  test("비밀번호 공란시 alert이 노출되고 비밀번호 포커스가 됨", async ({
+    page,
+  }) => {
+    await test.step("아이디만 입력", async () => {
+      await page.getByPlaceholder("아이디").fill(CREDENTIALS.id);
+      await expect(page.getByPlaceholder("비밀번호")).toHaveValue("");
+      await expect(loginBtn(page)).toBeEnabled();
+    });
+
+    await test.step("로그인 시도 후 alert 확인", async () => {
+      const whenDialog = page
+        .waitForEvent("dialog", { timeout: 5000 })
+        .then(async (d) => {
+          await expect(d.message()).toContain("비밀번호를 입력해 주세요"); // 실제 문구
+          await d.accept();
+        });
+
+      await loginBtn(page).click();
+      await whenDialog; // dialog 검증/처리가 실제로 수행됐는지 보장
+    });
+
+    await test.step("페이지/포커스 유지", async () => {
+      await expect(page).toHaveURL(/\/user-account\/login(?:\?.*)?$/);
+      await expect(page.getByPlaceholder("비밀번호")).toBeFocused();
+    });
+  });
+});
