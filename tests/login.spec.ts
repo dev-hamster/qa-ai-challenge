@@ -5,7 +5,7 @@ import { CREDENTIALS } from "./fixtures/user";
 test.describe("아이디, 비밀번호 로그인 성공 플로우", () => {
   // 항상 로그아웃 상태에서 시작
   test.beforeEach(async ({ context, page }) => {
-    await page.goto("/");
+    await page.goto("/", { waitUntil: "domcontentloaded" });
     await context.clearCookies();
     await context.clearPermissions();
   });
@@ -120,7 +120,7 @@ const loginBtn = (page: Page) =>
 
 test.describe("아이디, 비밀번호 로그인 실패 플로우", () => {
   test.beforeEach(async ({ page, context }) => {
-    await page.goto("/");
+    await page.goto("/", { waitUntil: "domcontentloaded" });
     await page.getByRole("link", { name: "마이페이지" }).click();
     await expect(page).toHaveURL(/\/user-account\/login(\?.*)?$/);
 
