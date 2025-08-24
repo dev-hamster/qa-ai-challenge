@@ -167,6 +167,13 @@ test.describe("인증 및 로그인 테스트 - 실패 시나리오", () => {
   test("아이디 공란시 alert이 노출 되고 아이디 포커스가 됨", async ({
     page,
   }) => {
+    const loginApiPattern = "**/member/login*";
+    let loginApiCalled = false;
+    await page.route(loginApiPattern, async (route) => {
+      loginApiCalled = true;
+      await route.abort();
+    });
+
     await test.step("비밀번호만 입력", async () => {
       await page.getByPlaceholder("비밀번호").fill(CREDENTIALS.pw);
       await expect(page.getByPlaceholder("아이디")).toHaveValue("");
@@ -185,6 +192,10 @@ test.describe("인증 및 로그인 테스트 - 실패 시나리오", () => {
       await whenDialog; // dialog 검증/처리가 실제로 수행됐는지 보장
     });
 
+    await test.step("API 요청이 발생하지 않음", async () => {
+      expect(loginApiCalled).toBe(false);
+    });
+
     await test.step("페이지/포커스 유지", async () => {
       await expect(page).toHaveURL(/\/user-account\/login(?:\?.*)?$/);
       await expect(page.getByPlaceholder("아이디")).toBeFocused();
@@ -194,6 +205,13 @@ test.describe("인증 및 로그인 테스트 - 실패 시나리오", () => {
   test("비밀번호 공란시 alert이 노출되고 비밀번호 포커스가 됨", async ({
     page,
   }) => {
+    const loginApiPattern = "**/member/login*";
+    let loginApiCalled = false;
+    await page.route(loginApiPattern, async (route) => {
+      loginApiCalled = true;
+      await route.abort();
+    });
+
     await test.step("아이디만 입력", async () => {
       await page.getByPlaceholder("아이디").fill(CREDENTIALS.id);
       await expect(page.getByPlaceholder("비밀번호")).toHaveValue("");
@@ -210,6 +228,10 @@ test.describe("인증 및 로그인 테스트 - 실패 시나리오", () => {
 
       await loginBtn(page).click();
       await whenDialog; // dialog 검증/처리가 실제로 수행됐는지 보장
+    });
+
+    await test.step("API 요청이 발생하지 않음", async () => {
+      expect(loginApiCalled).toBe(false);
     });
 
     await test.step("페이지/포커스 유지", async () => {
