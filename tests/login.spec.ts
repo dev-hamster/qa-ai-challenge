@@ -240,3 +240,54 @@ test.describe("인증 및 로그인 테스트 - 실패 시나리오", () => {
     });
   });
 });
+
+async function goToLoginViaMypage(page: Page) {
+  // 홈에서 바텀 내비 '마이페이지' 클릭 → 로그인 페이지로 이동
+  await page.goto("/", { waitUntil: "domcontentloaded" });
+  await page.getByRole("link", { name: "마이페이지" }).click();
+  await expect(page).toHaveURL(/\/user-account\/login(?:\?.*)?$/);
+}
+
+async function fillCredentials(page: Page, { id, pw }: typeof CREDENTIALS) {
+  await page.getByPlaceholder("아이디").fill(id);
+  await page.getByPlaceholder("비밀번호").fill(pw);
+}
+
+test.describe("세션/보호 라우트", () => {
+  test.beforeEach(async ({ page }) => {
+    await goToLoginViaMypage(page);
+  });
+
+  test("세션 만료 시 마이페이지 재접근하면 로그인 페이지로 리다이렉트되어야 함", async ({
+    page,
+    context,
+  }) => {
+    await test.step("아이디, 비밀번호로 로그인", async () => {
+      await fillCredentials(page, CREDENTIALS);
+      // 홈(/) 또는 /personal/mypage 로의 랜딩을 허용
+      await Promise.all([
+        page.waitForURL(/m\.albamon\.com\/(?:(?:$)|personal\/mypage(?:\/|$))/, {
+          timeout: 15000,
+        }),
+        loginBtn(page).click(),
+      ]);
+    });
+
+    await test.step("세션 만료 상태 시뮬레이션", async () => {
+      // TTL 초과를 모사: 인증 쿠키/스토리지 제거
+      await context.clearCookies(); // 필요 시 service domain 지정
+      await page.evaluate(() => {
+        try {
+          sessionStorage.clear();
+          localStorage.clear();
+        } catch {}
+      });
+    });
+
+    await test.step("보호 페이지 재접근 → 로그인 페이지로 리다이렉트", async () => {
+      await page.goto("/personal/mypage", { waitUntil: "domcontentloaded" });
+      // 쿼리 파라미터 포함 허용(redirect_url 등)
+      await expect(page).toHaveURL(/\/user-account\/login(?:\?.*)?$/);
+    });
+  });
+});
