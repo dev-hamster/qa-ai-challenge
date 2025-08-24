@@ -2,7 +2,7 @@ import { test, expect, Page } from "@playwright/test";
 
 import { CREDENTIALS } from "./fixtures/user";
 
-test.describe("인증 및 로그인 테스트 - 성공 시나리오", () => {
+test.describe("아이디, 비밀번호 로그인 성공 플로우", () => {
   // 항상 로그아웃 상태에서 시작
   test.beforeEach(async ({ context, page }) => {
     await page.goto("/");
@@ -118,7 +118,7 @@ test.describe("인증 및 로그인 테스트 - 성공 시나리오", () => {
 const loginBtn = (page: Page) =>
   page.getByRole("button", { name: /^로그인$/, exact: true });
 
-test.describe("인증 및 로그인 테스트 - 실패 시나리오", () => {
+test.describe("아이디, 비밀번호 로그인 실패 플로우", () => {
   test.beforeEach(async ({ page, context }) => {
     await page.goto("/");
     await page.getByRole("link", { name: "마이페이지" }).click();
